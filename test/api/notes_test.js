@@ -12,6 +12,28 @@ describe('basic notes crud', function() {
   var id;
   var token;
 
+  it('should not allow short password', function(done) {
+    chai.request('http://localhost:3000')
+    .post('/api/users')
+    .send({email:'test@test.com',password:'test',admin:true})
+    .end(function(err, res) {
+      expect(err).to.be.null;
+      expect(res.status).to.eql(500);
+      done();
+    });
+  });
+
+  it('should not allow no password', function(done) {
+    chai.request('http://localhost:3000')
+    .post('/api/users')
+    .send({email:'test@test.com',admin:true})
+    .end(function(err, res) {
+      expect(err).to.be.null;
+      expect(res.status).to.eql(500);
+      done();
+    });
+  });
+
   it('should log user in', function(done) {
     chai.request('http://localhost:3000')
     .post('/api/users')
