@@ -8,7 +8,7 @@ var userSchema = mongoose.Schema({
   basic: {
     email: String,
     password: String,
-    admin: Boolean,
+    admin: Boolean
   }
 });
 
@@ -21,11 +21,11 @@ userSchema.methods.validPassword = function(password) {
 };
 
 userSchema.methods.generateToken = function(secret) {
-  var week = 604800000
+  var week = 604800000;
   var expires = Date.now() + week;
-  var self = this;
+  var _this = this;
   var token = jwt.encode({
-    iss: self._id,
+    iss: _this._id,
     expire: expires
   }, secret);
   return token;
