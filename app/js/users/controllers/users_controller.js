@@ -7,8 +7,6 @@ module.exports = function(app) {
     $scope.errors = [];
     $scope.signIn = function() {
       $scope.errors = [];
-      console.log($scope.user.email);
-      console.log($scope.user.password);
       $http.defaults.headers.common['Authorization'] = 'Basic ' + $base64.encode($scope.user.email + ':' + $scope.user.password);
 
       $http({
@@ -36,7 +34,6 @@ module.exports = function(app) {
       $scope.newUser.email = $base64.encode($scope.newUser.email);
       $scope.newUser.password = $base64.encode($scope.newUser.password);
       $scope.newUser.passwordConfirmation = $base64.encode($scope.newUser.passwordConfirmation);
-      console.log($scope.newUser);
       $http({
         method: 'POST',
         url: 'api/users',
