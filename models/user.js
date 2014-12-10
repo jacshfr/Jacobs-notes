@@ -7,7 +7,8 @@ var jwt = require('jwt-simple');
 var userSchema = mongoose.Schema({
   basic: {
     email: String,
-    password: String
+    password: String,
+    admin: Boolean
   }
 });
 
@@ -20,9 +21,12 @@ userSchema.methods.validPassword = function(password) {
 };
 
 userSchema.methods.generateToken = function(secret) {
-  var self = this;
+  var week = 604800000;
+  var expires = Date.now() + week;
+  var _this = this;
   var token = jwt.encode({
-    iss: self._id 
+    iss: _this._id,
+    expire: expires
   }, secret);
   return token;
 };
