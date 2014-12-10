@@ -1,4 +1,9 @@
 db/
+node_modules/
+bower_components/
+build/
+test/angular_testbundle.js
+**/*.sw?
 # Logs
 logs
 *.log

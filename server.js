@@ -8,6 +8,7 @@ var app = express();
 
 mongoose.connect(process.env.MONGOLAB_URI || 'mongodb://localhost/notes_development');
 app.use(bodyparser.json());
+
 app.set('jwtSecret', process.env.JWT_SECRET || 'changethisordie');
 
 app.use(passport.initialize());
