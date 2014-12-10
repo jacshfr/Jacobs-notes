@@ -4,6 +4,10 @@ require("./../../bower_components/angular-route/angular-route.js");
 
 var notesApp = angular.module('notesApp', ['ngRoute']);
 
+//directives
+require('./directives/dummy_direc')(notesApp);
+require('./notes/directives/new_note_form_direc')(notesApp);
+
 //services
 require('./services/resource_backend_service')(notesApp);
 
@@ -21,7 +25,20 @@ notesApp.config(['$routeProvider', function($routeProvider) {
   });
 }]);
 
-},{"./../../bower_components/angular-route/angular-route.js":5,"./../../bower_components/angular/angular":6,"./notes/controllers/notes_controller":2,"./services/resource_backend_service":3}],2:[function(require,module,exports){
+},{"./../../bower_components/angular-route/angular-route.js":7,"./../../bower_components/angular/angular":8,"./directives/dummy_direc":2,"./notes/controllers/notes_controller":3,"./notes/directives/new_note_form_direc":4,"./services/resource_backend_service":5}],2:[function(require,module,exports){
+'use strict';
+
+module.exports = function(app) {
+  app.directive('dummyDirec', function() {
+    return {
+      restrict: 'AC',
+      template: '{{someVal}}<br><input type="text" data-ng-model="someVal">',
+      scope: {}
+    };
+  });
+};
+
+},{}],3:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
@@ -35,8 +52,8 @@ module.exports = function(app) {
       });
     };
 
-    $scope.saveNewNote = function() {
-      notesBackend.saveNew($scope.newNote)
+    $scope.saveNewNote = function(newNote) {
+      notesBackend.saveNew(newNote)
       .success(function(data) {
         $scope.notes.push(data);
         $scope.newNote = null;
@@ -59,7 +76,28 @@ module.exports = function(app) {
   }]);
 };
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
+'use strict';
+
+module.exports = function(app) {
+  app.directive('newNoteDirec', function() {
+    return {
+      restrict: 'EAC',
+      templateUrl: 'templates/notes/directives/new_note_form.html',
+      scope: {save: '&',
+              fieldname: '='},
+      controller: function($scope) {
+        $scope.saveResource = function() {
+          var newResource = {};
+          newResource[$scope.fieldname] = $scope.resource[$scope.fieldname];
+          $scope.save({resource: newResource});
+        };
+      }
+    };
+  });
+};
+
+},{}],5:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
@@ -108,7 +146,7 @@ module.exports = function(app) {
   }]);
 };
 
-},{}],4:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -2492,7 +2530,7 @@ if (window.jasmine || window.mocha) {
 
 })(window, window.angular);
 
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -3489,7 +3527,7 @@ function ngViewFillContentFactory($compile, $controller, $route) {
 
 })(window, window.angular);
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -29490,7 +29528,7 @@ var styleDirective = valueFn({
 })(window, document);
 
 !window.angular.$$csp() && window.angular.element(document).find('head').prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}</style>');
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 require('../../app/js/client');
@@ -29579,7 +29617,7 @@ describe('NotesController', function() {
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":4}],8:[function(require,module,exports){
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":6}],10:[function(require,module,exports){
 'use strict';
 
 require('../../app/js/client');
@@ -29649,4 +29687,4 @@ describe('resource service', function() {
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":4}]},{},[7,8]);
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":6}]},{},[9,10]);
