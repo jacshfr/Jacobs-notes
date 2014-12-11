@@ -15,7 +15,7 @@ describe('basic notes crud', function() {
   it('should not allow short password', function(done) {
     chai.request('http://localhost:3000')
     .post('/api/users')
-    .send({email:'test@test.com',password:'test',admin:true})
+    .send({email:'dGVzdEB0ZXN0LmNvbQ==', password:'dGVzdA==', passwordConfirmation: 'dGVzdA==', admin:true})
     .end(function(err, res) {
       expect(err).to.be.null;
       expect(res.status).to.eql(500);
@@ -26,7 +26,7 @@ describe('basic notes crud', function() {
   it('should not allow no password', function(done) {
     chai.request('http://localhost:3000')
     .post('/api/users')
-    .send({email:'test@test.com',admin:true})
+    .send({email:'dGVzdEB0ZXN0LmNvbQ==', password: '', passwordConfirmation: '', admin:true})
     .end(function(err, res) {
       expect(err).to.be.null;
       expect(res.status).to.eql(500);
@@ -37,7 +37,7 @@ describe('basic notes crud', function() {
   it('should log user in', function(done) {
     chai.request('http://localhost:3000')
     .post('/api/users')
-    .send({email:'test@test.com',password:'testtest',admin:true})
+    .send({email:'dGVzdEB0ZXN0LmNvbQ==',password:'dGVzdHRlc3Q=', passwordConfirmation: 'dGVzdHRlc3Q=', admin:true})
     .end(function(err, res) {
       expect(err).to.be.null;
       expect(res.body).to.have.property('jwt');
@@ -48,7 +48,7 @@ describe('basic notes crud', function() {
 
   it('should be able to create a note', function(done) {
     chai.request('http://localhost:3000')
-    .post('/v1/api/notes')
+    .post('/api/notes')
     .set({jwt:token})
     .send({noteBody:"hello world"})
     .end(function(err, res) {
@@ -62,7 +62,7 @@ describe('basic notes crud', function() {
 
   it('should be able to get an index', function(done) {
     chai.request('http://localhost:3000')
-    .get('/v1/api/notes')
+    .get('/api/notes')
     .set({jwt:token})
     .end(function(err, res) {
       expect(err).to.eql(null);
@@ -73,7 +73,7 @@ describe('basic notes crud', function() {
 
   it('should be able to get a single note', function(done) {
     chai.request('http://localhost:3000')
-    .get('/v1/api/notes/' + id)
+    .get('/api/notes/' + id)
     .set({jwt:token})
     .end(function(err, res) {
       expect(err).to.eql(null);
@@ -84,7 +84,7 @@ describe('basic notes crud', function() {
 
   it('should be able to update a note', function(done) {
     chai.request('http://localhost:3000')
-    .put('/v1/api/notes/' + id)
+    .put('/api/notes/' + id)
     .set({jwt:token})
     .send({noteBody: 'new note body'})
     .end(function(err, res) {
@@ -96,7 +96,7 @@ describe('basic notes crud', function() {
 
   it('should be able to destroy a note', function(done) {
     chai.request('http://localhost:3000')
-    .delete('/v1/api/notes/' + id)
+    .delete('/api/notes/' + id)
     .set({jwt:token})
     .end(function(err, res) {
       expect(err).to.eql(null);

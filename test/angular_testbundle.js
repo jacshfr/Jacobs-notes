@@ -53,6 +53,7 @@ module.exports = function(app) {
 module.exports = function(app) {
   app.controller('notesCtrl', ['$scope', '$http', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceBackend, $cookies, $location) {
     var notesBackend = new ResourceBackend('notes');
+
     if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
 
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
@@ -169,8 +170,6 @@ module.exports = function(app) {
     $scope.errors = [];
     $scope.signIn = function() {
       $scope.errors = [];
-      console.log($scope.user.email);
-      console.log($scope.user.password);
       $http.defaults.headers.common['Authorization'] = 'Basic ' + $base64.encode($scope.user.email + ':' + $scope.user.password);
 
       $http({
@@ -198,7 +197,6 @@ module.exports = function(app) {
       $scope.newUser.email = $base64.encode($scope.newUser.email);
       $scope.newUser.password = $base64.encode($scope.newUser.password);
       $scope.newUser.passwordConfirmation = $base64.encode($scope.newUser.passwordConfirmation);
-      console.log($scope.newUser);
       $http({
         method: 'POST',
         url: 'api/users',
@@ -29992,6 +29990,7 @@ describe('NotesController', function() {
   var $controllerConstructor;
   var $httpBackend;
   var $scope;
+  var $cookies = {jwt: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1NDg4YTUxNDM0OTFhMzAwMDBmY2I1M2EiLCJleHBpcmUiOjE0MTg4NDYxMDAzNTh9.fTI5NkaF5cujErKLoxrPevSGZdYNO0VcitMw-i62fAY'};
 
   beforeEach(angular.mock.module('notesApp'));
 
@@ -30008,7 +30007,7 @@ describe('NotesController', function() {
   describe('rest request', function() {
     beforeEach(angular.mock.inject(function(_$httpBackend_) {
       $httpBackend = _$httpBackend_;
-      $controllerConstructor('notesCtrl', {$scope: $scope});
+      $controllerConstructor('notesCtrl', {$scope: $scope, $cookies: $cookies});
     }));
 
     afterEach(function() {
@@ -30016,11 +30015,9 @@ describe('NotesController', function() {
       $httpBackend.verifyNoOutstandingRequest();
     });
 
-    it('make an call to index', function() {
+    it('make a call to index', function() {
       $httpBackend.expectGET('/api/notes').respond(200, [{'noteBody': 'test note', '_id': '1'}]);
-
       $scope.index();
-  debugger;
       $httpBackend.flush();
 
       expect($scope.notes).toBeDefined();
@@ -30028,10 +30025,10 @@ describe('NotesController', function() {
       expect(typeof $scope.notes[0]).toBe('object');
       expect($scope.notes[0].noteBody).toBe('test note');
     });
-    
+
     it('should save a new note', function() {
       $httpBackend.expectPOST('/api/notes').respond(200, {'noteBody': 'test note', '_id': 1});
-      $scope.notes = []; 
+      $scope.notes = [];
       $scope.newNote = {'noteBody': 'test note'};
       $scope.saveNewNote();
 

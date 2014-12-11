@@ -17,7 +17,7 @@ module.exports = function(app, passport) {
 
       if (user) return res.status(500).send('cannot create that user');
 
-      if (!regEx.test(req.body.password) || !req.body.password) return res.status(500).send('invalid password');
+      if (!regEx.test(password) || !password) return res.status(500).send('invalid password');
 
       if (password !== passwordConfirmation) return res.status(500).send('password does not match confirmation');
 
