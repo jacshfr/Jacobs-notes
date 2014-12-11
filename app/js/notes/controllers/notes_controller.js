@@ -3,12 +3,17 @@
 /*jshint sub:true*/
 
 module.exports = function(app) {
-  app.controller('notesCtrl', ['$scope', '$http', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceBackend, $cookies, $location) {
+  app.controller('notesCtrl', ['$scope', '$http', 'Auth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, Auth, ResourceBackend, $cookies, $location) {
     var notesBackend = new ResourceBackend('notes');
+    var auth = new Auth();
 
     if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
 
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
+
+    $scope.signOut = function() {
+      auth.signOut();
+    };
 
     $scope.index = function() {
       notesBackend.index()

@@ -32,7 +32,7 @@ describe('NotesController', function() {
       $httpBackend.verifyNoOutstandingRequest();
     });
 
-    it('make a call to index', function() {
+    it('should make a call to index', function() {
       $httpBackend.expectGET('/api/notes').respond(200, [{'noteBody': 'test note', '_id': '1'}]);
       $scope.index();
       $httpBackend.flush();
