@@ -12,7 +12,7 @@ module.exports = function(app) {
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
 
     $scope.signOut = function() {
-      auth.signOut();
+      auth.signOut($cookies);
     };
 
     $scope.index = function() {

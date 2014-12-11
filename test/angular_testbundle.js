@@ -61,7 +61,7 @@ module.exports = function(app) {
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
 
     $scope.signOut = function() {
-      auth.signOut();
+      auth.signOut($cookies);
     };
 
     $scope.index = function() {
@@ -123,13 +123,12 @@ module.exports = function(app) {
 /*jshint sub:true*/
 
 module.exports = function(app) {
-  app.factory('Auth', ['$location', '$cookies', function($location, $cookies) {
+  app.factory('Auth', ['$location', function($location) {
     return function() {
       return {
-        signOut: function() {
-          console.log($cookies);
+        signOut: function($cookies) {
 
-          delete $cookies['jwt'];
+          delete $cookies.jwt;
           return $location.path('/users');
         }
       };
@@ -30037,7 +30036,7 @@ describe('NotesController', function() {
     it('should sign user out', function() {
       $scope.signOut();
 
-      expect($cookies.jwt).toBeTruthy();
+      expect($cookies.jwt).toBe(undefined);
     })
   });
 });
