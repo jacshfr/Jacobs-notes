@@ -3,19 +3,20 @@
 /*jshint sub:true*/
 
 module.exports = function(app) {
-  app.controller('notesCtrl', ['$scope', '$http', 'Auth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, Auth, ResourceBackend, $cookies, $location) {
+  app.controller('notesCtrl', ['$scope', '$http', 'ResourceAuth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceAuth, ResourceBackend, $cookies, $location) {
     var notesBackend = new ResourceBackend('notes');
-    var auth = new Auth();
+    var auth = new ResourceAuth();
 
-    if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
+    auth.signedIn($cookies);
 
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
 
     $scope.signOut = function() {
-      auth.signOut();
+      auth.signOut($cookies);
     };
 
     $scope.index = function() {
+      auth.signedIn($cookies);
       notesBackend.index()
       .success(function(data) {
         $scope.notes = data;
@@ -23,6 +24,7 @@ module.exports = function(app) {
     };
 
     $scope.saveNewNote = function(newNote) {
+      auth.signedIn($cookies);
       notesBackend.saveNew(newNote)
       .success(function(data) {
         $scope.notes.push(data);
@@ -31,6 +33,7 @@ module.exports = function(app) {
     };
 
     $scope.saveNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.save(note)
       .success(function() {
         note.editing = false;
@@ -38,6 +41,7 @@ module.exports = function(app) {
     };
 
     $scope.deleteNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.delete(note)
       .success(function() {
         $scope.notes.splice($scope.notes.indexOf(note), 1);

@@ -52,19 +52,20 @@ module.exports = function(app) {
 /*jshint sub:true*/
 
 module.exports = function(app) {
-  app.controller('notesCtrl', ['$scope', '$http', 'Auth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, Auth, ResourceBackend, $cookies, $location) {
+  app.controller('notesCtrl', ['$scope', '$http', 'ResourceAuth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceAuth, ResourceBackend, $cookies, $location) {
     var notesBackend = new ResourceBackend('notes');
-    var auth = new Auth();
+    var auth = new ResourceAuth();
 
-    if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
+    auth.signedIn($cookies);
 
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
 
     $scope.signOut = function() {
-      auth.signOut();
+      auth.signOut($cookies);
     };
 
     $scope.index = function() {
+      auth.signedIn($cookies);
       notesBackend.index()
       .success(function(data) {
         $scope.notes = data;
@@ -72,6 +73,7 @@ module.exports = function(app) {
     };
 
     $scope.saveNewNote = function(newNote) {
+      auth.signedIn($cookies);
       notesBackend.saveNew(newNote)
       .success(function(data) {
         $scope.notes.push(data);
@@ -80,6 +82,7 @@ module.exports = function(app) {
     };
 
     $scope.saveNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.save(note)
       .success(function() {
         note.editing = false;
@@ -87,6 +90,7 @@ module.exports = function(app) {
     };
 
     $scope.deleteNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.delete(note)
       .success(function() {
         $scope.notes.splice($scope.notes.indexOf(note), 1);
@@ -107,7 +111,6 @@ module.exports = function(app) {
               fieldname: '=',
               resourcename: '@'},
       controller: function($scope) {
-        console.log($scope.save);
         $scope.saveResource = function() {
           $scope.save({resource: $scope.resource});
           $scope.resource = null;
@@ -123,14 +126,18 @@ module.exports = function(app) {
 /*jshint sub:true*/
 
 module.exports = function(app) {
-  app.factory('Auth', ['$location', '$cookies', function($location, $cookies) {
+  app.factory('ResourceAuth', ['$location', function($location) {
     return function() {
       return {
-        signOut: function() {
-          console.log($cookies);
+        signOut: function($cookies) {
 
-          delete $cookies['jwt'];
+          delete $cookies.jwt;
           return $location.path('/users');
+        },
+
+        signedIn: function($cookies) {
+          if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
+          return console.log('user logged in');
         }
       };
     };
@@ -30037,7 +30044,7 @@ describe('NotesController', function() {
     it('should sign user out', function() {
       $scope.signOut();
 
-      expect($cookies.jwt).toBeTruthy();
+      expect($cookies.jwt).toBe(undefined);
     })
   });
 });

@@ -28,7 +28,7 @@ describe('NotesController', function() {
     it('should sign user out', function() {
       $scope.signOut();
 
-      expect($cookies.jwt).toBeTruthy();
+      expect($cookies.jwt).toBe(undefined);
     })
   });
 });
