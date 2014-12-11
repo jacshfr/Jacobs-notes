@@ -14,7 +14,7 @@ module.exports = function(app) {
 
         signedIn: function($cookies) {
           if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
-          return console.log('user logged in');
+          // console.log('user logged in');
         }
       };
     };

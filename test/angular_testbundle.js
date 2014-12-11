@@ -84,7 +84,7 @@ module.exports = function(app) {
     $scope.saveNote = function(note) {
       auth.signedIn($cookies);
       notesBackend.save(note)
-      .success(function() {
+      .success(function(data) {
         note.editing = false;
       });
     };
@@ -137,7 +137,7 @@ module.exports = function(app) {
 
         signedIn: function($cookies) {
           if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
-          return console.log('user logged in');
+          // console.log('user logged in');
         }
       };
     };
@@ -30121,18 +30121,15 @@ describe('NotesController', function() {
     });
 
     it('it should edit a note', function() {
-      $httpBackend.expectPUT('/api/notes/1').respond(200);
+      $httpBackend.expectPUT('/api/notes/1').respond(200, {'noteBody': 'hello world', '_id': 1});
 
-      var note = {'noteBody': 'test note', '_id': 1};
-      $scope.notes = [note];
-      note.noteBody = 'changed test';
+      var note = {'noteBody': 'changed test', '_id': 1};
 
       $scope.saveNote(note);
 
       $httpBackend.flush();
 
-      expect($scope.notes.length).toBe(1);
-      expect($scope.notes[0].noteBody).toBe('changed test');
+      expect(note.editing).toBe(false);
     });
   });
 });
@@ -30207,4 +30204,6 @@ describe('resource service', function() {
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}]},{},[14,15,16]);
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],17:[function(require,module,exports){
+
+},{}]},{},[14,15,16,17]);

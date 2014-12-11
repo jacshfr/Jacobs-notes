@@ -35,7 +35,7 @@ module.exports = function(app) {
     $scope.saveNote = function(note) {
       auth.signedIn($cookies);
       notesBackend.save(note)
-      .success(function() {
+      .success(function(data) {
         note.editing = false;
       });
     };

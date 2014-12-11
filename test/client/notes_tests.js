@@ -69,18 +69,15 @@ describe('NotesController', function() {
     });
 
     it('it should edit a note', function() {
-      $httpBackend.expectPUT('/api/notes/1').respond(200);
+      $httpBackend.expectPUT('/api/notes/1').respond(200, {'noteBody': 'hello world', '_id': 1});
 
-      var note = {'noteBody': 'test note', '_id': 1};
-      $scope.notes = [note];
-      note.noteBody = 'changed test';
+      var note = {'noteBody': 'changed test', '_id': 1};
 
       $scope.saveNote(note);
 
       $httpBackend.flush();
 
-      expect($scope.notes.length).toBe(1);
-      expect($scope.notes[0].noteBody).toBe('changed test');
+      expect(note.editing).toBe(false);
     });
   });
 });
