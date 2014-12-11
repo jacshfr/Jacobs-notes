@@ -1,10 +1,7 @@
 language: node_js
 node_js:
 - '0.10'
-# uncomment these services for back-end REST API apps
-# services:
- - mongodb
-#  - redis-server
+- mongodb
 before_install:
 - npm install -g grunt-cli
 - npm install -g bower
