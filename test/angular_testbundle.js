@@ -13,6 +13,7 @@ require('./notes/directives/new_note_form_direc')(notesApp);
 
 //services
 require('./services/resource_backend_service')(notesApp);
+require('./services/auth_service')(notesApp);
 
 //controllers
 require('./notes/controllers/notes_controller')(notesApp);
@@ -32,7 +33,7 @@ notesApp.config(['$routeProvider', function($routeProvider) {
   });
 }]);
 
-},{"./../../bower_components/angular-base64/angular-base64.js":8,"./../../bower_components/angular-cookies/angular-cookies.js":9,"./../../bower_components/angular-route/angular-route.js":11,"./../../bower_components/angular/angular":12,"./directives/dummy_direc":2,"./notes/controllers/notes_controller":3,"./notes/directives/new_note_form_direc":4,"./services/resource_backend_service":5,"./users/users":7}],2:[function(require,module,exports){
+},{"./../../bower_components/angular-base64/angular-base64.js":9,"./../../bower_components/angular-cookies/angular-cookies.js":10,"./../../bower_components/angular-route/angular-route.js":12,"./../../bower_components/angular/angular":13,"./directives/dummy_direc":2,"./notes/controllers/notes_controller":3,"./notes/directives/new_note_form_direc":4,"./services/auth_service":5,"./services/resource_backend_service":6,"./users/users":8}],2:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
@@ -51,14 +52,20 @@ module.exports = function(app) {
 /*jshint sub:true*/
 
 module.exports = function(app) {
-  app.controller('notesCtrl', ['$scope', '$http', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceBackend, $cookies, $location) {
+  app.controller('notesCtrl', ['$scope', '$http', 'ResourceAuth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceAuth, ResourceBackend, $cookies, $location) {
     var notesBackend = new ResourceBackend('notes');
+    var auth = new ResourceAuth();
 
-    if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
+    auth.signedIn($cookies);
 
     $http.defaults.headers.common['jwt'] = $cookies.jwt;
 
+    $scope.signOut = function() {
+      auth.signOut($cookies);
+    };
+
     $scope.index = function() {
+      auth.signedIn($cookies);
       notesBackend.index()
       .success(function(data) {
         $scope.notes = data;
@@ -66,6 +73,7 @@ module.exports = function(app) {
     };
 
     $scope.saveNewNote = function(newNote) {
+      auth.signedIn($cookies);
       notesBackend.saveNew(newNote)
       .success(function(data) {
         $scope.notes.push(data);
@@ -74,13 +82,15 @@ module.exports = function(app) {
     };
 
     $scope.saveNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.save(note)
-      .success(function() {
+      .success(function(data) {
         note.editing = false;
       });
     };
 
     $scope.deleteNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.delete(note)
       .success(function() {
         $scope.notes.splice($scope.notes.indexOf(note), 1);
@@ -101,7 +111,6 @@ module.exports = function(app) {
               fieldname: '=',
               resourcename: '@'},
       controller: function($scope) {
-        console.log($scope.save);
         $scope.saveResource = function() {
           $scope.save({resource: $scope.resource});
           $scope.resource = null;
@@ -112,6 +121,30 @@ module.exports = function(app) {
 };
 
 },{}],5:[function(require,module,exports){
+'use strict';
+
+/*jshint sub:true*/
+
+module.exports = function(app) {
+  app.factory('ResourceAuth', ['$location', function($location) {
+    return function() {
+      return {
+        signOut: function($cookies) {
+
+          delete $cookies.jwt;
+          return $location.path('/users');
+        },
+
+        signedIn: function($cookies) {
+          if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
+          // console.log('user logged in');
+        }
+      };
+    };
+  }]);
+};
+
+},{}],6:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
@@ -160,7 +193,7 @@ module.exports = function(app) {
   }]);
 };
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 /*jshint sub:true*/
@@ -215,14 +248,14 @@ module.exports = function(app) {
   }]);
 };
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
   require('./controllers/users_controller')(app);
 };
 
-},{"./controllers/users_controller":6}],8:[function(require,module,exports){
+},{"./controllers/users_controller":7}],9:[function(require,module,exports){
 (function() {
     'use strict';
 
@@ -390,7 +423,7 @@ module.exports = function(app) {
 
 })();
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -598,7 +631,7 @@ angular.module('ngCookies', ['ng']).
 
 })(window, window.angular);
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -2982,7 +3015,7 @@ if (window.jasmine || window.mocha) {
 
 })(window, window.angular);
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -3979,7 +4012,7 @@ function ngViewFillContentFactory($compile, $controller, $route) {
 
 })(window, window.angular);
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -29980,7 +30013,43 @@ var styleDirective = valueFn({
 })(window, document);
 
 !window.angular.$$csp() && window.angular.element(document).find('head').prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}</style>');
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+'use strict';
+
+require('../../app/js/client');
+require("./../../bower_components/angular-mocks/angular-mocks.js");
+
+describe('NotesController', function() {
+  var $controllerConstructor;
+  var $scope;
+  var $cookies = {jwt: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1NDg4YTUxNDM0OTFhMzAwMDBmY2I1M2EiLCJleHBpcmUiOjE0MTg4NDYxMDAzNTh9.fTI5NkaF5cujErKLoxrPevSGZdYNO0VcitMw-i62fAY'};
+
+  beforeEach(angular.mock.module('notesApp'));
+
+  beforeEach(angular.mock.inject(function($rootScope, $controller) {
+    $scope = $rootScope.$new();
+    $controllerConstructor = $controller;
+  }));
+
+  it('should be able to create a controller', function() {
+    var notesController = $controllerConstructor('notesCtrl', {$scope: $scope});
+    expect(typeof notesController).toBe('object');
+  });
+
+  describe('sign out', function() {
+    beforeEach(angular.mock.inject(function() {
+      $controllerConstructor('notesCtrl', {$scope: $scope, $cookies: $cookies});
+    }));
+
+    it('should sign user out', function() {
+      $scope.signOut();
+
+      expect($cookies.jwt).toBe(undefined);
+    })
+  });
+});
+
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],15:[function(require,module,exports){
 'use strict';
 
 require('../../app/js/client');
@@ -29990,7 +30059,7 @@ describe('NotesController', function() {
   var $controllerConstructor;
   var $httpBackend;
   var $scope;
-  var $cookies = {jwt: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1NDg4YTUxNDM0OTFhMzAwMDBmY2I1M2EiLCJleHBpcmUiOjE0MTg4NDYxMDAzNTh9.fTI5NkaF5cujErKLoxrPevSGZdYNO0VcitMw-i62fAY'};
+  var $cookies = {jwt: '1'};
 
   beforeEach(angular.mock.module('notesApp'));
 
@@ -30015,7 +30084,7 @@ describe('NotesController', function() {
       $httpBackend.verifyNoOutstandingRequest();
     });
 
-    it('make a call to index', function() {
+    it('should make a call to index', function() {
       $httpBackend.expectGET('/api/notes').respond(200, [{'noteBody': 'test note', '_id': '1'}]);
       $scope.index();
       $httpBackend.flush();
@@ -30052,23 +30121,20 @@ describe('NotesController', function() {
     });
 
     it('it should edit a note', function() {
-      $httpBackend.expectPUT('/api/notes/1').respond(200);
+      $httpBackend.expectPUT('/api/notes/1').respond(200, {'noteBody': 'hello world', '_id': 1});
 
-      var note = {'noteBody': 'test note', '_id': 1};
-      $scope.notes = [note];
-      note.noteBody = 'changed test';
+      var note = {'noteBody': 'changed test', '_id': 1};
 
       $scope.saveNote(note);
 
       $httpBackend.flush();
 
-      expect($scope.notes.length).toBe(1);
-      expect($scope.notes[0].noteBody).toBe('changed test');
+      expect(note.editing).toBe(false);
     });
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":10}],14:[function(require,module,exports){
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],16:[function(require,module,exports){
 'use strict';
 
 require('../../app/js/client');
@@ -30138,4 +30204,6 @@ describe('resource service', function() {
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":10}]},{},[13,14]);
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],17:[function(require,module,exports){
+
+},{}]},{},[14,15,16,17]);

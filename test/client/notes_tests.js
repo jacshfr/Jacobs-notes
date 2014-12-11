@@ -7,7 +7,7 @@ describe('NotesController', function() {
   var $controllerConstructor;
   var $httpBackend;
   var $scope;
-  var $cookies = {jwt: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1NDg4YTUxNDM0OTFhMzAwMDBmY2I1M2EiLCJleHBpcmUiOjE0MTg4NDYxMDAzNTh9.fTI5NkaF5cujErKLoxrPevSGZdYNO0VcitMw-i62fAY'};
+  var $cookies = {jwt: '1'};
 
   beforeEach(angular.mock.module('notesApp'));
 
@@ -32,7 +32,7 @@ describe('NotesController', function() {
       $httpBackend.verifyNoOutstandingRequest();
     });
 
-    it('make a call to index', function() {
+    it('should make a call to index', function() {
       $httpBackend.expectGET('/api/notes').respond(200, [{'noteBody': 'test note', '_id': '1'}]);
       $scope.index();
       $httpBackend.flush();
@@ -69,18 +69,15 @@ describe('NotesController', function() {
     });
 
     it('it should edit a note', function() {
-      $httpBackend.expectPUT('/api/notes/1').respond(200);
+      $httpBackend.expectPUT('/api/notes/1').respond(200, {'noteBody': 'hello world', '_id': 1});
 
-      var note = {'noteBody': 'test note', '_id': 1};
-      $scope.notes = [note];
-      note.noteBody = 'changed test';
+      var note = {'noteBody': 'changed test', '_id': 1};
 
       $scope.saveNote(note);
 
       $httpBackend.flush();
 
-      expect($scope.notes.length).toBe(1);
-      expect($scope.notes[0].noteBody).toBe('changed test');
+      expect(note.editing).toBe(false);
     });
   });
 });
