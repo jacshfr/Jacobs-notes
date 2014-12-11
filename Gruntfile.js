@@ -5,19 +5,13 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-karma');
-  grunt.loadNpmTasks('grunt-jscs');
 
   grunt.initConfig({
     jshint: {
-      src: ['models/**/*.js', 'server.js', 'routes/**/*.js', 'app/js/**/*.js'],
-      jshintrc: true
-    },
-
-    jscs: {
-      src: ['models/**/*.js', 'server.js', 'routes/**/*.js', 'lib/**/*.js'],
       options: {
-        config: '.jscsrc'
-      }
+        node: true
+      },
+      src: ['models/**/*.js', 'server.js', 'routes/**/*.js', 'app/js/**/*.js']
     },
 
     simplemocha: {
@@ -67,8 +61,8 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.registerTask('test', ['jshint', 'simplemocha']);
+  grunt.registerTask('test', ['jshint', 'simplemocha', 'test:client']);
   grunt.registerTask('test:client', ['browserify:test', 'karma:unit']);
   grunt.registerTask('build', ['jshint', 'clean', 'browserify', 'copy:dev']);
-
+  grunt.registerTask('default', ['test']);
 };
