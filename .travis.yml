@@ -6,8 +6,8 @@ services:
  - mongodb
 #  - redis-server
 before_install:
-# - npm install grunt-cli
-# - npm install bower
+- npm install grunt-cli
+- npm install bower
 install:
 - npm install
 - bower install
