@@ -8,7 +8,8 @@ describe('resource service', function() {
   var $controllerConstructor;
   var $httpBackend;
   var $scope;
-  var jwt = {'jwt': '1'};
+  var $cookies;
+  var jwt = {jwt: '1'};
 
   beforeEach(angular.mock.inject(function($rootScope, $controller) {
     $scope = $rootScope.$new();
@@ -23,7 +24,8 @@ describe('resource service', function() {
   describe('rest request', function() {
     beforeEach(angular.mock.inject(function(_$httpBackend_) {
     $httpBackend = _$httpBackend_;
-    $controllerConstructor('UsersCtrl', {$scope: $scope});
+    $cookies = {};
+    $controllerConstructor('UsersCtrl', {$scope: $scope, $cookies: $cookies});
     }));
 
     afterEach(function() {
@@ -40,7 +42,7 @@ describe('resource service', function() {
       $scope.signIn();
       $httpBackend.flush();
 
-      expect($scope.message).toEqual('success');
+      expect($cookies.jwt).toEqual('1');
 
     });
 
@@ -54,7 +56,7 @@ describe('resource service', function() {
       $scope.signUp();
       $httpBackend.flush();
 
-      expect($scope.message).toEqual('success');
+      expect($cookies.jwt).toEqual('1');
 
     });
   });
