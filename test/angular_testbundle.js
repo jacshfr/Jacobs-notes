@@ -210,7 +210,8 @@ module.exports = function(app) {
         url: '/api/users'
       })
       .success(function(data) {
-        console.log('success');
+        $scope.message = 'success';
+        console.log($scope.message);
         $cookies.jwt = data.jwt;
         $location.path('/notes');
       })
@@ -232,11 +233,12 @@ module.exports = function(app) {
       $scope.newUser.passwordConfirmation = $base64.encode($scope.newUser.passwordConfirmation);
       $http({
         method: 'POST',
-        url: 'api/users',
+        url: '/api/users',
         data: $scope.newUser
       })
       .success(function(data) {
-        console.log('success!');
+        $scope.message = 'success';
+        console.log($scope.message);
         $cookies.jwt = data.jwt;
         $location.path('/notes');
       })
@@ -30205,5 +30207,66 @@ describe('resource service', function() {
 });
 
 },{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],17:[function(require,module,exports){
+'use strict';
 
-},{}]},{},[14,15,16,17]);
+require('../../app/js/users/controllers/users_controller');
+require("./../../bower_components/angular-mocks/angular-mocks.js");
+
+describe('resource service', function() {
+  beforeEach(angular.mock.module('notesApp'));
+  var $controllerConstructor;
+  var $httpBackend;
+  var $scope;
+  var jwt = {'jwt': '1'};
+
+  beforeEach(angular.mock.inject(function($rootScope, $controller) {
+    $scope = $rootScope.$new();
+    $controllerConstructor = $controller;
+  }));
+
+  it('should be able to create a controller', function() {
+    var userController = $controllerConstructor('UsersCtrl', {$scope: $scope});
+    expect(typeof userController).toBe('object');
+  });
+
+  describe('rest request', function() {
+    beforeEach(angular.mock.inject(function(_$httpBackend_) {
+    $httpBackend = _$httpBackend_;
+    $controllerConstructor('UsersCtrl', {$scope: $scope});
+    }));
+
+    afterEach(function() {
+      $httpBackend.verifyNoOutstandingExpectation();
+      $httpBackend.verifyNoOutstandingRequest();
+    });
+
+    it('should make a GET request to users', function() {
+      $httpBackend.expectGET('/api/users').respond(200, jwt);
+      $scope.user = {
+        email: 'test@example.com',
+        password: 'testtest'
+      };
+      $scope.signIn();
+      $httpBackend.flush();
+
+      expect($scope.message).toEqual('success');
+
+    });
+
+    it('should make a POST request to users', function() {
+      $httpBackend.expectPOST('/api/users').respond(200, jwt);
+      $scope.newUser = {
+        email: 'test@example.com',
+        password: 'testtest',
+        passwordConfirmation: 'testtest'
+      };
+      $scope.signUp();
+      $httpBackend.flush();
+
+      expect($scope.message).toEqual('success');
+
+    });
+  });
+});
+
+},{"../../app/js/users/controllers/users_controller":7,"./../../bower_components/angular-mocks/angular-mocks.js":11}]},{},[14,15,16,17]);

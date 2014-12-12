@@ -14,7 +14,8 @@ module.exports = function(app) {
         url: '/api/users'
       })
       .success(function(data) {
-        console.log('success');
+        $scope.message = 'success';
+        console.log($scope.message);
         $cookies.jwt = data.jwt;
         $location.path('/notes');
       })
@@ -36,11 +37,12 @@ module.exports = function(app) {
       $scope.newUser.passwordConfirmation = $base64.encode($scope.newUser.passwordConfirmation);
       $http({
         method: 'POST',
-        url: 'api/users',
+        url: '/api/users',
         data: $scope.newUser
       })
       .success(function(data) {
-        console.log('success!');
+        $scope.message = 'success';
+        console.log($scope.message);
         $cookies.jwt = data.jwt;
         $location.path('/notes');
       })

@@ -1,7 +1,7 @@
 <div data-ng-controller="UsersCtrl">
   <div data-ng-hide="existingUser">
     <form name="newUser">
-      <input type="text" data-ng-model="newUser.email">
+      <input type="email" data-ng-model="newUser.email">
       <input type="password" data-ng-model="newUser.password">
       <input type="password" data-ng-model="newUser.passwordConfirmation">
       <button data-ng-click="signUp()">Create New User</button>
@@ -9,7 +9,7 @@
   </div>
   <div data-ng-show="existingUser">
     <form name="userForm">
-      <input type="text" data-ng-model="user.email">
+      <input type="email" data-ng-model="user.email">
       <input type="password" data-ng-model="user.password">
       <button data-ng-click="signIn()">Sign In</button>
     </form>
