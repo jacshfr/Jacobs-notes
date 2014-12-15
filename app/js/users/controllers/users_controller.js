@@ -1,14 +1,14 @@
 'use strict';
 
-/*jshint sub:true*/
 
 module.exports = function(app) {
   app.controller('UsersCtrl', ['$scope', '$http', '$cookies', '$base64', '$location', function($scope, $http, $cookies, $base64, $location) {
     $scope.errors = [];
     $scope.signIn = function() {
       $scope.errors = [];
+      /*jshint sub:true*/
       $http.defaults.headers.common['Authorization'] = 'Basic ' + $base64.encode($scope.user.email + ':' + $scope.user.password);
-
+      /*jshint sub:false*/
       $http({
         method: 'GET',
         url: '/api/users'
