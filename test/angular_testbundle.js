@@ -1,15 +1,19 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 require("./../../bower_components/angular/angular");
 require("./../../bower_components/angular-route/angular-route.js");
+require("./../../bower_components/angular-cookies/angular-cookies.js");
+require("./../../bower_components/angular-base64/angular-base64.js");
 
-var notesApp = angular.module('notesApp', ['ngRoute']);
+var notesApp = angular.module('notesApp', ['ngRoute', 'ngCookies', 'base64']);
 
+require('./users/users')(notesApp);
 //directives
 require('./directives/dummy_direc')(notesApp);
 require('./notes/directives/new_note_form_direc')(notesApp);
 
 //services
 require('./services/resource_backend_service')(notesApp);
+require('./services/auth_service')(notesApp);
 
 //controllers
 require('./notes/controllers/notes_controller')(notesApp);
@@ -20,12 +24,16 @@ notesApp.config(['$routeProvider', function($routeProvider) {
     templateUrl: 'templates/notes/notes_template.html',
     controller: 'notesCtrl'
   })
+  .when('/users', {
+    templateUrl: 'templates/users/users_view.html',
+    controller: 'UsersCtrl'
+  })
   .otherwise({
-    redirectTo: '/notes'
+    redirectTo: '/users'
   });
 }]);
 
-},{"./../../bower_components/angular-route/angular-route.js":7,"./../../bower_components/angular/angular":8,"./directives/dummy_direc":2,"./notes/controllers/notes_controller":3,"./notes/directives/new_note_form_direc":4,"./services/resource_backend_service":5}],2:[function(require,module,exports){
+},{"./../../bower_components/angular-base64/angular-base64.js":9,"./../../bower_components/angular-cookies/angular-cookies.js":10,"./../../bower_components/angular-route/angular-route.js":12,"./../../bower_components/angular/angular":13,"./directives/dummy_direc":2,"./notes/controllers/notes_controller":3,"./notes/directives/new_note_form_direc":4,"./services/auth_service":5,"./services/resource_backend_service":6,"./users/users":8}],2:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
@@ -41,11 +49,23 @@ module.exports = function(app) {
 },{}],3:[function(require,module,exports){
 'use strict';
 
+/*jshint sub:true*/
+
 module.exports = function(app) {
-  app.controller('notesCtrl', ['$scope', '$http', 'ResourceBackend', function($scope, $http, ResourceBackend) {
+  app.controller('notesCtrl', ['$scope', '$http', 'ResourceAuth', 'ResourceBackend', '$cookies', '$location', function($scope, $http, ResourceAuth, ResourceBackend, $cookies, $location) {
     var notesBackend = new ResourceBackend('notes');
+    var auth = new ResourceAuth();
+
+    auth.signedIn($cookies);
+
+    $http.defaults.headers.common['jwt'] = $cookies.jwt;
+
+    $scope.signOut = function() {
+      auth.signOut($cookies);
+    };
 
     $scope.index = function() {
+      auth.signedIn($cookies);
       notesBackend.index()
       .success(function(data) {
         $scope.notes = data;
@@ -53,6 +73,7 @@ module.exports = function(app) {
     };
 
     $scope.saveNewNote = function(newNote) {
+      auth.signedIn($cookies);
       notesBackend.saveNew(newNote)
       .success(function(data) {
         $scope.notes.push(data);
@@ -61,13 +82,15 @@ module.exports = function(app) {
     };
 
     $scope.saveNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.save(note)
-      .success(function() {
-        note.editing = false; 
+      .success(function(data) {
+        note.editing = false;
       });
     };
 
     $scope.deleteNote = function(note) {
+      auth.signedIn($cookies);
       notesBackend.delete(note)
       .success(function() {
         $scope.notes.splice($scope.notes.indexOf(note), 1);
@@ -85,12 +108,12 @@ module.exports = function(app) {
       restrict: 'EAC',
       templateUrl: 'templates/notes/directives/new_note_form.html',
       scope: {save: '&',
-              fieldname: '='},
+              fieldname: '=',
+              resourcename: '@'},
       controller: function($scope) {
         $scope.saveResource = function() {
-          var newResource = {};
-          newResource[$scope.fieldname] = $scope.resource[$scope.fieldname];
-          $scope.save({resource: newResource});
+          $scope.save({resource: $scope.resource});
+          $scope.resource = null;
         };
       }
     };
@@ -98,6 +121,30 @@ module.exports = function(app) {
 };
 
 },{}],5:[function(require,module,exports){
+'use strict';
+
+/*jshint sub:true*/
+
+module.exports = function(app) {
+  app.factory('ResourceAuth', ['$location', function($location) {
+    return function() {
+      return {
+        signOut: function($cookies) {
+
+          delete $cookies.jwt;
+          return $location.path('/users');
+        },
+
+        signedIn: function($cookies) {
+          if (!$cookies.jwt || !$cookies.jwt.length) return $location.path('/users');
+          // console.log('user logged in');
+        }
+      };
+    };
+  }]);
+};
+
+},{}],6:[function(require,module,exports){
 'use strict';
 
 module.exports = function(app) {
@@ -120,7 +167,7 @@ module.exports = function(app) {
           return $http({
             method: 'POST',
             url: '/api/' + resourceName,
-            data: resource 
+            data: resource
           })
           .error(handleErrors);
         },
@@ -138,7 +185,7 @@ module.exports = function(app) {
           return $http({
             method: 'DELETE',
             url: '/api/' + resourceName + '/' + resource._id
-          }) 
+          })
           .error(handleErrors);
         }
       };
@@ -146,7 +193,448 @@ module.exports = function(app) {
   }]);
 };
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+'use strict';
+
+
+module.exports = function(app) {
+  app.controller('UsersCtrl', ['$scope', '$http', '$cookies', '$base64', '$location', function($scope, $http, $cookies, $base64, $location) {
+    $scope.errors = [];
+    $scope.signIn = function() {
+      $scope.errors = [];
+      /*jshint sub:true*/
+      $http.defaults.headers.common['Authorization'] = 'Basic ' + $base64.encode($scope.user.email + ':' + $scope.user.password);
+      /*jshint sub:false*/
+
+      $http({
+        method: 'GET',
+        url: '/api/users'
+      })
+      .success(function(data) {
+        $scope.message = 'success';
+        console.log($scope.message);
+        $cookies.jwt = data.jwt;
+        $location.path('/notes');
+      })
+      .error(function(data) {
+        console.log('error!');
+        console.log(data);
+        $scope.errors.push(data);
+      });
+    };
+
+    $scope.signUp = function() {
+      $scope.errors = [];
+      if ($scope.newUser.password !== $scope.newUser.passwordConfirmation) $scope.errors.push({msg: 'password and confirmation did not match'});
+      if (!$scope.newUser.email) $scope.errors.push({msg: 'did note specify a email'});
+
+      if ($scope.errors.length) return;
+      $scope.newUser.email = $base64.encode($scope.newUser.email);
+      $scope.newUser.password = $base64.encode($scope.newUser.password);
+      $scope.newUser.passwordConfirmation = $base64.encode($scope.newUser.passwordConfirmation);
+      $http({
+        method: 'POST',
+        url: '/api/users',
+        data: $scope.newUser
+      })
+      .success(function(data) {
+        $scope.message = 'success';
+        console.log($scope.message);
+        $cookies.jwt = data.jwt;
+        $location.path('/notes');
+      })
+      .error(function(data) {
+        console.log(data);
+        $scope.errors.push(data);
+      });
+    };
+  }]);
+};
+
+},{}],8:[function(require,module,exports){
+'use strict';
+
+module.exports = function(app) {
+  require('./controllers/users_controller')(app);
+};
+
+},{"./controllers/users_controller":7}],9:[function(require,module,exports){
+(function() {
+    'use strict';
+
+    /*
+     * Encapsulation of Nick Galbreath's base64.js library for AngularJS
+     * Original notice included below
+     */
+
+    /*
+     * Copyright (c) 2010 Nick Galbreath
+     * http://code.google.com/p/stringencoders/source/browse/#svn/trunk/javascript
+     *
+     * Permission is hereby granted, free of charge, to any person
+     * obtaining a copy of this software and associated documentation
+     * files (the "Software"), to deal in the Software without
+     * restriction, including without limitation the rights to use,
+     * copy, modify, merge, publish, distribute, sublicense, and/or sell
+     * copies of the Software, and to permit persons to whom the
+     * Software is furnished to do so, subject to the following
+     * conditions:
+     *
+     * The above copyright notice and this permission notice shall be
+     * included in all copies or substantial portions of the Software.
+     *
+     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+     * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+     * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+     * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+     * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+     * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+     * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+     * OTHER DEALINGS IN THE SOFTWARE.
+     */
+
+    /* base64 encode/decode compatible with window.btoa/atob
+     *
+     * window.atob/btoa is a Firefox extension to convert binary data (the "b")
+     * to base64 (ascii, the "a").
+     *
+     * It is also found in Safari and Chrome.  It is not available in IE.
+     *
+     * if (!window.btoa) window.btoa = base64.encode
+     * if (!window.atob) window.atob = base64.decode
+     *
+     * The original spec's for atob/btoa are a bit lacking
+     * https://developer.mozilla.org/en/DOM/window.atob
+     * https://developer.mozilla.org/en/DOM/window.btoa
+     *
+     * window.btoa and base64.encode takes a string where charCodeAt is [0,255]
+     * If any character is not [0,255], then an exception is thrown.
+     *
+     * window.atob and base64.decode take a base64-encoded string
+     * If the input length is not a multiple of 4, or contains invalid characters
+     *   then an exception is thrown.
+     */
+
+    angular.module('base64', []).constant('$base64', (function() {
+
+        var PADCHAR = '=';
+
+        var ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+        function getbyte64(s,i) {
+            var idx = ALPHA.indexOf(s.charAt(i));
+            if (idx == -1) {
+                throw "Cannot decode base64";
+            }
+            return idx;
+        }
+
+        function decode(s) {
+            // convert to string
+            s = "" + s;
+            var pads, i, b10;
+            var imax = s.length;
+            if (imax == 0) {
+                return s;
+            }
+
+            if (imax % 4 != 0) {
+                throw "Cannot decode base64";
+            }
+
+            pads = 0;
+            if (s.charAt(imax -1) == PADCHAR) {
+                pads = 1;
+                if (s.charAt(imax -2) == PADCHAR) {
+                    pads = 2;
+                }
+                // either way, we want to ignore this last block
+                imax -= 4;
+            }
+
+            var x = [];
+            for (i = 0; i < imax; i += 4) {
+                b10 = (getbyte64(s,i) << 18) | (getbyte64(s,i+1) << 12) |
+                    (getbyte64(s,i+2) << 6) | getbyte64(s,i+3);
+                x.push(String.fromCharCode(b10 >> 16, (b10 >> 8) & 0xff, b10 & 0xff));
+            }
+
+            switch (pads) {
+                case 1:
+                    b10 = (getbyte64(s,i) << 18) | (getbyte64(s,i+1) << 12) | (getbyte64(s,i+2) << 6);
+                    x.push(String.fromCharCode(b10 >> 16, (b10 >> 8) & 0xff));
+                    break;
+                case 2:
+                    b10 = (getbyte64(s,i) << 18) | (getbyte64(s,i+1) << 12);
+                    x.push(String.fromCharCode(b10 >> 16));
+                    break;
+            }
+            return x.join('');
+        }
+
+        function getbyte(s,i) {
+            var x = s.charCodeAt(i);
+            if (x > 255) {
+                throw "INVALID_CHARACTER_ERR: DOM Exception 5";
+            }
+            return x;
+        }
+
+        function encode(s) {
+            if (arguments.length != 1) {
+                throw "SyntaxError: Not enough arguments";
+            }
+
+            var i, b10;
+            var x = [];
+
+            // convert to string
+            s = "" + s;
+
+            var imax = s.length - s.length % 3;
+
+            if (s.length == 0) {
+                return s;
+            }
+            for (i = 0; i < imax; i += 3) {
+                b10 = (getbyte(s,i) << 16) | (getbyte(s,i+1) << 8) | getbyte(s,i+2);
+                x.push(ALPHA.charAt(b10 >> 18));
+                x.push(ALPHA.charAt((b10 >> 12) & 0x3F));
+                x.push(ALPHA.charAt((b10 >> 6) & 0x3f));
+                x.push(ALPHA.charAt(b10 & 0x3f));
+            }
+            switch (s.length - imax) {
+                case 1:
+                    b10 = getbyte(s,i) << 16;
+                    x.push(ALPHA.charAt(b10 >> 18) + ALPHA.charAt((b10 >> 12) & 0x3F) +
+                        PADCHAR + PADCHAR);
+                    break;
+                case 2:
+                    b10 = (getbyte(s,i) << 16) | (getbyte(s,i+1) << 8);
+                    x.push(ALPHA.charAt(b10 >> 18) + ALPHA.charAt((b10 >> 12) & 0x3F) +
+                        ALPHA.charAt((b10 >> 6) & 0x3f) + PADCHAR);
+                    break;
+            }
+            return x.join('');
+        }
+
+        return {
+            encode: encode,
+            decode: decode
+        };
+    })());
+
+})();
+
+},{}],10:[function(require,module,exports){
+/**
+ * @license AngularJS v1.3.6
+ * (c) 2010-2014 Google, Inc. http://angularjs.org
+ * License: MIT
+ */
+(function(window, angular, undefined) {'use strict';
+
+/**
+ * @ngdoc module
+ * @name ngCookies
+ * @description
+ *
+ * # ngCookies
+ *
+ * The `ngCookies` module provides a convenient wrapper for reading and writing browser cookies.
+ *
+ *
+ * <div doc-module-components="ngCookies"></div>
+ *
+ * See {@link ngCookies.$cookies `$cookies`} and
+ * {@link ngCookies.$cookieStore `$cookieStore`} for usage.
+ */
+
+
+angular.module('ngCookies', ['ng']).
+  /**
+   * @ngdoc service
+   * @name $cookies
+   *
+   * @description
+   * Provides read/write access to browser's cookies.
+   *
+   * Only a simple Object is exposed and by adding or removing properties to/from this object, new
+   * cookies are created/deleted at the end of current $eval.
+   * The object's properties can only be strings.
+   *
+   * Requires the {@link ngCookies `ngCookies`} module to be installed.
+   *
+   * @example
+   *
+   * ```js
+   * angular.module('cookiesExample', ['ngCookies'])
+   *   .controller('ExampleController', ['$cookies', function($cookies) {
+   *     // Retrieving a cookie
+   *     var favoriteCookie = $cookies.myFavorite;
+   *     // Setting a cookie
+   *     $cookies.myFavorite = 'oatmeal';
+   *   }]);
+   * ```
+   */
+   factory('$cookies', ['$rootScope', '$browser', function($rootScope, $browser) {
+      var cookies = {},
+          lastCookies = {},
+          lastBrowserCookies,
+          runEval = false,
+          copy = angular.copy,
+          isUndefined = angular.isUndefined;
+
+      //creates a poller fn that copies all cookies from the $browser to service & inits the service
+      $browser.addPollFn(function() {
+        var currentCookies = $browser.cookies();
+        if (lastBrowserCookies != currentCookies) { //relies on browser.cookies() impl
+          lastBrowserCookies = currentCookies;
+          copy(currentCookies, lastCookies);
+          copy(currentCookies, cookies);
+          if (runEval) $rootScope.$apply();
+        }
+      })();
+
+      runEval = true;
+
+      //at the end of each eval, push cookies
+      //TODO: this should happen before the "delayed" watches fire, because if some cookies are not
+      //      strings or browser refuses to store some cookies, we update the model in the push fn.
+      $rootScope.$watch(push);
+
+      return cookies;
+
+
+      /**
+       * Pushes all the cookies from the service to the browser and verifies if all cookies were
+       * stored.
+       */
+      function push() {
+        var name,
+            value,
+            browserCookies,
+            updated;
+
+        //delete any cookies deleted in $cookies
+        for (name in lastCookies) {
+          if (isUndefined(cookies[name])) {
+            $browser.cookies(name, undefined);
+          }
+        }
+
+        //update all cookies updated in $cookies
+        for (name in cookies) {
+          value = cookies[name];
+          if (!angular.isString(value)) {
+            value = '' + value;
+            cookies[name] = value;
+          }
+          if (value !== lastCookies[name]) {
+            $browser.cookies(name, value);
+            updated = true;
+          }
+        }
+
+        //verify what was actually stored
+        if (updated) {
+          updated = false;
+          browserCookies = $browser.cookies();
+
+          for (name in cookies) {
+            if (cookies[name] !== browserCookies[name]) {
+              //delete or reset all cookies that the browser dropped from $cookies
+              if (isUndefined(browserCookies[name])) {
+                delete cookies[name];
+              } else {
+                cookies[name] = browserCookies[name];
+              }
+              updated = true;
+            }
+          }
+        }
+      }
+    }]).
+
+
+  /**
+   * @ngdoc service
+   * @name $cookieStore
+   * @requires $cookies
+   *
+   * @description
+   * Provides a key-value (string-object) storage, that is backed by session cookies.
+   * Objects put or retrieved from this storage are automatically serialized or
+   * deserialized by angular's toJson/fromJson.
+   *
+   * Requires the {@link ngCookies `ngCookies`} module to be installed.
+   *
+   * @example
+   *
+   * ```js
+   * angular.module('cookieStoreExample', ['ngCookies'])
+   *   .controller('ExampleController', ['$cookieStore', function($cookieStore) {
+   *     // Put cookie
+   *     $cookieStore.put('myFavorite','oatmeal');
+   *     // Get cookie
+   *     var favoriteCookie = $cookieStore.get('myFavorite');
+   *     // Removing a cookie
+   *     $cookieStore.remove('myFavorite');
+   *   }]);
+   * ```
+   */
+   factory('$cookieStore', ['$cookies', function($cookies) {
+
+      return {
+        /**
+         * @ngdoc method
+         * @name $cookieStore#get
+         *
+         * @description
+         * Returns the value of given cookie key
+         *
+         * @param {string} key Id to use for lookup.
+         * @returns {Object} Deserialized cookie value.
+         */
+        get: function(key) {
+          var value = $cookies[key];
+          return value ? angular.fromJson(value) : value;
+        },
+
+        /**
+         * @ngdoc method
+         * @name $cookieStore#put
+         *
+         * @description
+         * Sets a value for given cookie key
+         *
+         * @param {string} key Id for the `value`.
+         * @param {Object} value Value to be stored.
+         */
+        put: function(key, value) {
+          $cookies[key] = angular.toJson(value);
+        },
+
+        /**
+         * @ngdoc method
+         * @name $cookieStore#remove
+         *
+         * @description
+         * Remove given cookie
+         *
+         * @param {string} key Id of the key-value pair to delete.
+         */
+        remove: function(key) {
+          delete $cookies[key];
+        }
+      };
+
+    }]);
+
+
+})(window, window.angular);
+
+},{}],11:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -2530,7 +3018,7 @@ if (window.jasmine || window.mocha) {
 
 })(window, window.angular);
 
-},{}],7:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -3527,7 +4015,7 @@ function ngViewFillContentFactory($compile, $controller, $route) {
 
 })(window, window.angular);
 
-},{}],8:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /**
  * @license AngularJS v1.3.6
  * (c) 2010-2014 Google, Inc. http://angularjs.org
@@ -29528,7 +30016,43 @@ var styleDirective = valueFn({
 })(window, document);
 
 !window.angular.$$csp() && window.angular.element(document).find('head').prepend('<style type="text/css">@charset "UTF-8";[ng\\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\\:form{display:block;}</style>');
-},{}],9:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+'use strict';
+
+require('../../app/js/client');
+require("./../../bower_components/angular-mocks/angular-mocks.js");
+
+describe('NotesController', function() {
+  var $controllerConstructor;
+  var $scope;
+  var $cookies = {jwt: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1NDg4YTUxNDM0OTFhMzAwMDBmY2I1M2EiLCJleHBpcmUiOjE0MTg4NDYxMDAzNTh9.fTI5NkaF5cujErKLoxrPevSGZdYNO0VcitMw-i62fAY'};
+
+  beforeEach(angular.mock.module('notesApp'));
+
+  beforeEach(angular.mock.inject(function($rootScope, $controller) {
+    $scope = $rootScope.$new();
+    $controllerConstructor = $controller;
+  }));
+
+  it('should be able to create a controller', function() {
+    var notesController = $controllerConstructor('notesCtrl', {$scope: $scope});
+    expect(typeof notesController).toBe('object');
+  });
+
+  describe('sign out', function() {
+    beforeEach(angular.mock.inject(function() {
+      $controllerConstructor('notesCtrl', {$scope: $scope, $cookies: $cookies});
+    }));
+
+    it('should sign user out', function() {
+      $scope.signOut();
+
+      expect($cookies.jwt).toBe(undefined);
+    })
+  });
+});
+
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],15:[function(require,module,exports){
 'use strict';
 
 require('../../app/js/client');
@@ -29538,6 +30062,7 @@ describe('NotesController', function() {
   var $controllerConstructor;
   var $httpBackend;
   var $scope;
+  var $cookies = {jwt: '1'};
 
   beforeEach(angular.mock.module('notesApp'));
 
@@ -29554,7 +30079,7 @@ describe('NotesController', function() {
   describe('rest request', function() {
     beforeEach(angular.mock.inject(function(_$httpBackend_) {
       $httpBackend = _$httpBackend_;
-      $controllerConstructor('notesCtrl', {$scope: $scope});
+      $controllerConstructor('notesCtrl', {$scope: $scope, $cookies: $cookies});
     }));
 
     afterEach(function() {
@@ -29562,11 +30087,9 @@ describe('NotesController', function() {
       $httpBackend.verifyNoOutstandingRequest();
     });
 
-    it('make an call to index', function() {
+    it('should make a call to index', function() {
       $httpBackend.expectGET('/api/notes').respond(200, [{'noteBody': 'test note', '_id': '1'}]);
-
       $scope.index();
-  debugger;
       $httpBackend.flush();
 
       expect($scope.notes).toBeDefined();
@@ -29574,10 +30097,10 @@ describe('NotesController', function() {
       expect(typeof $scope.notes[0]).toBe('object');
       expect($scope.notes[0].noteBody).toBe('test note');
     });
-    
+
     it('should save a new note', function() {
       $httpBackend.expectPOST('/api/notes').respond(200, {'noteBody': 'test note', '_id': 1});
-      $scope.notes = []; 
+      $scope.notes = [];
       $scope.newNote = {'noteBody': 'test note'};
       $scope.saveNewNote();
 
@@ -29601,23 +30124,20 @@ describe('NotesController', function() {
     });
 
     it('it should edit a note', function() {
-      $httpBackend.expectPUT('/api/notes/1').respond(200);
+      $httpBackend.expectPUT('/api/notes/1').respond(200, {'noteBody': 'hello world', '_id': 1});
 
-      var note = {'noteBody': 'test note', '_id': 1};
-      $scope.notes = [note];
-      note.noteBody = 'changed test';
+      var note = {'noteBody': 'changed test', '_id': 1};
 
       $scope.saveNote(note);
 
       $httpBackend.flush();
 
-      expect($scope.notes.length).toBe(1);
-      expect($scope.notes[0].noteBody).toBe('changed test');
+      expect(note.editing).toBe(false);
     });
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":6}],10:[function(require,module,exports){
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],16:[function(require,module,exports){
 'use strict';
 
 require('../../app/js/client');
@@ -29687,4 +30207,69 @@ describe('resource service', function() {
   });
 });
 
-},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":6}]},{},[9,10]);
+},{"../../app/js/client":1,"./../../bower_components/angular-mocks/angular-mocks.js":11}],17:[function(require,module,exports){
+'use strict';
+
+require('../../app/js/users/controllers/users_controller');
+require("./../../bower_components/angular-mocks/angular-mocks.js");
+
+describe('resource service', function() {
+  beforeEach(angular.mock.module('notesApp'));
+  var $controllerConstructor;
+  var $httpBackend;
+  var $scope;
+  var $cookies;
+  var jwt = {jwt: '1'};
+
+  beforeEach(angular.mock.inject(function($rootScope, $controller) {
+    $scope = $rootScope.$new();
+    $controllerConstructor = $controller;
+  }));
+
+  it('should be able to create a controller', function() {
+    var userController = $controllerConstructor('UsersCtrl', {$scope: $scope});
+    expect(typeof userController).toBe('object');
+  });
+
+  describe('rest request', function() {
+    beforeEach(angular.mock.inject(function(_$httpBackend_) {
+    $httpBackend = _$httpBackend_;
+    $cookies = {};
+    $controllerConstructor('UsersCtrl', {$scope: $scope, $cookies: $cookies});
+    }));
+
+    afterEach(function() {
+      $httpBackend.verifyNoOutstandingExpectation();
+      $httpBackend.verifyNoOutstandingRequest();
+    });
+
+    it('should make a GET request to users', function() {
+      $httpBackend.expectGET('/api/users').respond(200, jwt);
+      $scope.user = {
+        email: 'test@example.com',
+        password: 'testtest'
+      };
+      $scope.signIn();
+      $httpBackend.flush();
+
+      expect($cookies.jwt).toEqual('1');
+
+    });
+
+    it('should make a POST request to users', function() {
+      $httpBackend.expectPOST('/api/users').respond(200, jwt);
+      $scope.newUser = {
+        email: 'test@example.com',
+        password: 'testtest',
+        passwordConfirmation: 'testtest'
+      };
+      $scope.signUp();
+      $httpBackend.flush();
+
+      expect($cookies.jwt).toEqual('1');
+
+    });
+  });
+});
+
+},{"../../app/js/users/controllers/users_controller":7,"./../../bower_components/angular-mocks/angular-mocks.js":11}]},{},[14,15,16,17]);

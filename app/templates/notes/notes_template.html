@@ -1,5 +1,6 @@
 <div data-ng-controller="notesCtrl" data-ng-init="index()">
-  <new-note-direc save="saveNewNote(resource)" fieldname="'noteBody'"></new-note-direc>
+  <button data-ng-click="signOut()">Sign Out</button>
+  <new-note-direc save="saveNewNote(resource)" fieldname="'noteBody'" resourcename="Note"></new-note-direc>
 
   <div data-ng-repeat="note in notes">
     <div data-ng-hide="note.editing">
